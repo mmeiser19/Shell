@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include "linuxCommands.h"
 
 #define MAX_LINE 80 /* The maximum length command */
 //array to store strings
@@ -43,7 +44,6 @@ int main(void) {
             should_run = 0;
         }
         else if (strcmp(input, "pwd") == 0) {
-            printf("in pwd if statement\n");
             char cwd[100];
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
                 printf("%s\n", cwd);
@@ -57,7 +57,15 @@ int main(void) {
                 perror("chdir() error");
             }
         }
-        // check if user is pressing ctrl + d
+        else if (strcmp(input, "ls") == 0) {
+            my_ls(".");
+        }
+        else if (strcmp(input, "cat") == 0) {
+            //read in next argument as filename
+            char *filename = args[1];
+            //print_file(filename);
+            my_cat(filename);
+        }
         else {
             pid_t pid = fork();
             if (pid < 0) { /* error occurred */
