@@ -34,14 +34,15 @@ int main(void) {
         fflush(stdout);
 
         char input[MAX_LINE];
-        fgets(input, MAX_LINE, stdin);
-        input[strlen(input) - 1] = '\0'; // remove the trailing newline character
+        //fgets(input, MAX_LINE, stdin);
+
 
         if (fgets(input, MAX_LINE, stdin) == NULL) {
             // EOF detected, exit the program
             printf("\n");
             exit(0);
         }
+        input[strlen(input) - 1] = '\0'; // remove the trailing newline character
 
         char *token = strtok(input, " ");
         int i = 0;
