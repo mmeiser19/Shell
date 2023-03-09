@@ -12,7 +12,7 @@ char *commands[11] = {"ls", "cd", "pwd", "exit", "grep", "cat",
                       "&", ">", "<", "|", "help"};
 
 int valid_command(char *string);
-void handle_sigint();
+void sigint_handler(int sig);
 
 
 int main(void) {
@@ -21,14 +21,7 @@ int main(void) {
     int line = 0;
 
     while (should_run) {
-        //create signal handler to detect ctrl c and ignore it
-        //signal(SIGINT, handle_sigint);
-
-        //if (signal(SIGINT, handle_sigint) == SIG_ERR) {
-            //perror("signal");
-            //return 1;
-        //}
-
+        signal(SIGINT, sigint_handler); //used to catch and ignore ctrl c
         //print the prompt with the line number
         printf("teenysh%d> ", line++);
         fflush(stdout);
@@ -44,7 +37,6 @@ int main(void) {
                 exit(0);
             }
             // Some other error occurred, print error message and continue
-            perror("fgets");
             continue;
         }
 
@@ -109,6 +101,9 @@ int main(void) {
                 wait(NULL);
             }
         }
+        //***** NOT SURE IF NECESSARY, KEEP FOR NOW *****
+        //clear input buffer for next command
+        memset(input, 0, sizeof(input));
     }
     return 0;
 }
@@ -122,7 +117,7 @@ int valid_command(char *string) {
     return 0;
 }
 
-void handle_sigint() {
-    //printf("\nCTRL+C detected\n");
-    // You can perform any additional cleanup or processing here
+void sigint_handler(int sig) {
+    //Do nothing; ignore the signal
+    printf("\n");
 }
