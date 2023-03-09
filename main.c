@@ -34,14 +34,20 @@ int main(void) {
         fflush(stdout);
 
         char input[MAX_LINE];
-        //fgets(input, MAX_LINE, stdin);
 
-
+        //checks to see if the user entered a command
+        //if the command is ctrl d, exit the program
         if (fgets(input, MAX_LINE, stdin) == NULL) {
-            // EOF detected, exit the program
-            printf("\n");
-            exit(0);
+            if (feof(stdin)) {
+                // EOF detected, exit the program
+                printf("\n");
+                exit(0);
+            }
+            // Some other error occurred, print error message and continue
+            perror("fgets");
+            continue;
         }
+
         input[strlen(input) - 1] = '\0'; // remove the trailing newline character
 
         char *token = strtok(input, " ");
@@ -52,12 +58,12 @@ int main(void) {
         }
         args[i] = NULL; // set the last element to null pointer
 
-        if (strcmp(args[0], "exit") == 0) {
-            should_run = 0;
-        }
-            //if the user enters nothing, continue
-        else if (input[0] == '\0') {
+        //if the user enters nothing, continue
+        if (strlen(input) == 0) {
             continue;
+        }
+        else if (strcmp(args[0], "exit") == 0) {
+            should_run = 0;
         }
         else if (strcmp(args[0], "help") == 0) {
             printf("Commands:\n");
