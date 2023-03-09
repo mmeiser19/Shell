@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <string.h>
 #include "linuxCommands.h"
+#include <signal.h>
 
 #define MAX_LINE 80 /* The maximum length command */
 //array to store strings
@@ -11,6 +12,8 @@ char *commands[11] = {"ls", "cd", "pwd", "exit", "grep", "cat",
                       "&", ">", "<", "|", "help"};
 
 int valid_command(char *string);
+void handle_sigint();
+
 
 int main(void) {
     char *args[MAX_LINE/2 + 1]; /* command line arguments */
@@ -18,6 +21,14 @@ int main(void) {
     int line = 0;
 
     while (should_run) {
+        //create signal handler to detect ctrl c and ignore it
+        //signal(SIGINT, handle_sigint);
+
+        //if (signal(SIGINT, handle_sigint) == SIG_ERR) {
+            //perror("signal");
+            //return 1;
+        //}
+
         //print the prompt with the line number
         printf("teenysh%d> ", line++);
         fflush(stdout);
@@ -25,6 +36,12 @@ int main(void) {
         char input[MAX_LINE];
         fgets(input, MAX_LINE, stdin);
         input[strlen(input) - 1] = '\0'; // remove the trailing newline character
+
+        if (fgets(input, MAX_LINE, stdin) == NULL) {
+            // EOF detected, exit the program
+            printf("\n");
+            exit(0);
+        }
 
         char *token = strtok(input, " ");
         int i = 0;
@@ -34,14 +51,18 @@ int main(void) {
         }
         args[i] = NULL; // set the last element to null pointer
 
-        if (strcmp(args[0], "help") == 0) {
+        if (strcmp(args[0], "exit") == 0) {
+            should_run = 0;
+        }
+            //if the user enters nothing, continue
+        else if (input[0] == '\0') {
+            continue;
+        }
+        else if (strcmp(args[0], "help") == 0) {
             printf("Commands:\n");
             for (int j = 0; j < 11; j++) {
                 printf("%s\n", commands[j]);
             }
-        }
-        else if (strcmp(args[0], "exit") == 0) {
-            should_run = 0;
         }
         else if (strcmp(input, "pwd") == 0) {
             char cwd[100];
@@ -92,4 +113,9 @@ int valid_command(char *string) {
         }
     }
     return 0;
+}
+
+void handle_sigint() {
+    //printf("\nCTRL+C detected\n");
+    // You can perform any additional cleanup or processing here
 }
