@@ -3,24 +3,23 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
-#include "linuxCommands.h"
 #include <signal.h>
 
 #define MAX_LINE 80 /* The maximum length command */
-//array to store strings
-char *commands[11] = {"ls", "cd", "pwd", "exit", "grep", "cat",
-                      "&", ">", "<", "|", "help"};
 
 int valid_command(char *string);
-void sigint_handler(int sig);
+void sigint_handler();
+int getLength(char **string);
 
+//array to store strings
+char *commands[7] = {"ls", "cd", "pwd", "exit", "grep", "cat","help"};
 
 int main(void) {
     char *args[MAX_LINE/2 + 1]; /* command line arguments */
-    int should_run = 1; /* flag to determine when to exit program */
-    int line = 0;
+    int line = 0; //line number printed for every command prompt
+    int numCommands = getLength(commands);
 
-    while (should_run) {
+    while (1) {
         signal(SIGINT, sigint_handler); //used to catch and ignore ctrl c
         //print the prompt with the line number
         printf("teenysh%d> ", line++);
@@ -30,14 +29,9 @@ int main(void) {
 
         //checks to see if the user entered a command
         //if the command is ctrl d, exit the program
-        if (fgets(input, MAX_LINE, stdin) == NULL) {
-            if (feof(stdin)) {
-                // EOF detected, exit the program
-                printf("\n");
-                exit(0);
-            }
-            // Some other error occurred, print error message and continue
-            continue;
+        if (fgets(input, MAX_LINE, stdin) == NULL && feof(stdin)) {
+            printf("\n");
+            exit(0);
         }
 
         input[strlen(input) - 1] = '\0'; // remove the trailing newline character
@@ -55,11 +49,11 @@ int main(void) {
             continue;
         }
         else if (strcmp(args[0], "exit") == 0) {
-            should_run = 0;
+            exit(0);
         }
         else if (strcmp(args[0], "help") == 0) {
             printf("Commands:\n");
-            for (int j = 0; j < 11; j++) {
+            for (int j = 0; j < numCommands; j++) {
                 printf("%s\n", commands[j]);
             }
         }
@@ -69,7 +63,7 @@ int main(void) {
                 printf("%s\n", cwd);
             }
         }
-        else if (strncmp(input, "cd", 3) == 0) {
+        else if (strncmp(input, "cd", 2) == 0) {
             char *path = input + 3; // skip the "cd " prefix
             if (chdir(path) == 0) {
                 printf("Changed directory to: %s\n", path);
@@ -77,39 +71,27 @@ int main(void) {
                 perror("chdir() error");
             }
         }
-        else if (strcmp(input, "ls") == 0) {
-            my_ls(".");
-        }
-        else if (strcmp(input, "cat") == 0) {
-            //read in next argument as filename
-            char *filename = args[1];
-            //print_file(filename);
-            my_cat(filename);
+        //base case for commands such as ls, grep, and cat
+        else if (fork() == 0) {
+            execvp(args[0], args);
+            if (valid_command(args[0]) == 0) {
+                printf("Unknown command: %s\n", args[0]);
+            }
         }
         else {
-            pid_t pid = fork();
-            if (pid < 0) { /* error occurred */
-                fprintf(stderr, "Fork failed");
-                return 1;
-            } else if (pid == 0) { /* child process */
-                execvp(args[0], args);
-                if (valid_command(args[0]) == 0) {
-                    fprintf(stderr, "Unknown command: %s\n", args[0]);
-                }
-                return 0;
-            } else { /* parent process */
-                wait(NULL);
-            }
+            wait(NULL);
+            // Add a newline at the end of the output
+            putchar('\n');
         }
         //***** NOT SURE IF NECESSARY, KEEP FOR NOW *****
         //clear input buffer for next command
         memset(input, 0, sizeof(input));
     }
-    return 0;
 }
 
 int valid_command(char *string) {
-    for (int i = 0; i < 11; i++) {
+    int numCommands = getLength(commands);
+    for (int i = 0; i < numCommands; i++) {
         if (strcmp(string, commands[i]) == 0) {
             return 1;
         }
@@ -117,7 +99,15 @@ int valid_command(char *string) {
     return 0;
 }
 
-void sigint_handler(int sig) {
+int getLength(char **string) {
+    int length = 0;
+    while (string[length] != NULL) {
+        length++;
+    }
+    return length;
+}
+
+void sigint_handler() {
     //Do nothing; ignore the signal
     printf("\n");
 }
