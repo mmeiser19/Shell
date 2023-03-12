@@ -5,6 +5,8 @@
 #include <string.h>
 #include <signal.h>
 
+//Gusty, the code for my shell is so cool that I want you to read it!
+
 #define MAX_LINE 80 /* The maximum length command */
 
 int valid_command(char *string);
