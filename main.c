@@ -12,6 +12,8 @@
 int valid_command(char *string);
 void sigint_handler();
 int getLength(char **string);
+int checkRedirectOutput(char **args);
+void redirectOutput(char **args, char *command);
 
 //array to store strings
 char *commands[7] = {"ls", "cd", "pwd", "exit", "grep", "cat","help"};
@@ -126,7 +128,17 @@ int main(void) {
         else if (strcmp(input, "pwd") == 0) {
             char cwd[100];
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                printf("%s\n", cwd);
+                if (checkRedirectOutput(args) == 1) {
+                    //open file
+                    /*FILE *output;
+                    output = fopen(args[i-1], "w");
+                    fprintf(output, "%s", cwd);
+                    fclose(output);*/
+                    redirectOutput(args, cwd);
+                }
+                else {
+                    printf("%s\n", cwd);
+                }
             }
         }
         else if (strncmp(input, "cd", 2) == 0) {
@@ -137,17 +149,47 @@ int main(void) {
                 perror("chdir() error");
             }
         }
-        //base case for commands such as ls, grep, and cat
-        else if (fork() == 0) {
-            execvp(args[0], args);
-            if (valid_command(args[0]) == 0) {
-                printf("Unknown command: %s\n", args[0]);
-            }
+        else if (strcmp(input, "grep") == 0) {
+            //use the grep command
         }
+        //base case for commands such as ls, cat
         else {
-            wait(NULL);
-            // Add a newline at the end of the output
-            putchar('\n');
+            if (fork() == 0) {
+                if (checkRedirectOutput(args) == 1) {
+                    //redirect output with execvp
+                    i = 0;
+                    while (args[i] != NULL) {
+                        if (strcmp(args[i], ">") == 0) {
+                            //open file
+                            FILE *output;
+                            output = fopen(args[i+1], "w");
+                            //print to file
+                            fprintf(output, "%s", (char) execvp(args[0], args));
+                            fclose(output);
+                        }
+                        i++;
+                    }
+                }
+                //if last arg is &, run in background
+                else {
+                    execvp(args[0], args);
+                }
+                //execvp(args[0], args);
+                if (valid_command(args[0]) == 0) {
+                    printf("Unknown command: %s\n", args[0]);
+                }
+            }
+            else {
+                //run process in background
+                if (strcmp(args[argc-1], "&") == 0) {
+                    continue;
+                }
+                else {
+                    wait(NULL);
+                }
+                // Add a newline at the end of the output
+                putchar('\n');
+            }
         }
 
 	if(haspipe == 1){
@@ -190,3 +232,45 @@ void sigint_handler() {
     //Do nothing; ignore the signal
     printf("\n");
 }
+
+//check if > command is in args
+int checkRedirectOutput(char **args) {
+    int i = 0;
+    while (args[i] != NULL) {
+        if (strcmp(args[i], ">") == 0) {
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
+//check if < command is in args
+int checkRedirectInput(char **args) {
+    int i = 0;
+    while (args[i] != NULL) {
+        if (strcmp(args[i], "<") == 0) {
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
+//function that redirects output to a file
+void redirectOutput(char **args, char *command) {
+    int i = 0;
+    while (args[i] != NULL) {
+        if (strcmp(args[i], ">") == 0) {
+            //open file
+            FILE *output;
+            output = fopen(args[i+1], "w");
+            //print to file
+            fprintf(output, "%s", command);
+            fclose(output);
+        }
+        i++;
+    }
+}
+
+//function that redirects input from a file
