@@ -18,6 +18,7 @@ char *commands[7] = {"ls", "cd", "pwd", "exit", "grep", "cat","help"};
 
 int main(void) {
     char *args[MAX_LINE/2 + 1]; /* command line arguments */
+    int argc = 0; //counter for number of arguments
     int line = 0; //line number printed for every command prompt
     int numCommands = getLength(commands);
 
@@ -43,8 +44,71 @@ int main(void) {
         while (token != NULL) {
             args[i++] = token;
             token = strtok(NULL, " ");
+	    argc++;
         }
         args[i] = NULL; // set the last element to null pointer
+
+	//split args check modifier
+	int haspipe = 0;
+	for(int i = 0; i < argc; i++){
+	    if(strcmp(args[i], "|") == 0){
+		haspipe = 1;
+	    }
+	}
+
+   	//check for multiple args, replacement values
+    	char *repargs[MAX_LINE/2 + 1];
+	int repargc = 0;
+	int fint;
+	if(haspipe == 1){
+
+	    //printf("%d", argc);
+            //read and fork if pipe symbol
+	    for(int i = 0; i < argc; i++){
+	        //check if arg is pipe
+	        if(strcmp(args[i], "|") == 0){
+		    //create new process
+		    fint = fork();
+		    //erase replacement values 
+		    for(int j = 0; j < repargc; j++){
+		        repargs[j] = NULL;
+		    }
+		    repargc = 0;
+	        }
+	        else{
+		    repargs[repargc] = args[i];
+		    repargc++;
+	        }
+	    }
+
+	    //initialize forked pipe process
+	    if(fint == 0){
+	        for(int i = 0; i < (MAX_LINE/2 + 1); i++){
+   	            args[i] = NULL;
+                }
+                for(int i = 0; i < repargc; i++){
+                    args[i] = repargs[i];
+	        }
+	        argc = repargc;
+	    }
+	    else{	
+	       int erase = 0; //false by default
+	        for(int i = 0; i < argc; i++){
+		    if(erase == 1){
+		        args[i] = NULL;
+		    }
+		    else if(strcmp(args[i], "|") == 0){
+		        args[i] = NULL;
+		        argc = i - 1;
+		        erase = 1;
+		        break;
+		    }
+		    else{
+		        //this spot intentionally left blank
+		    }
+	        }
+	    }
+	}
 
         //if the user enters nothing, continue
         if (strlen(input) == 0) {
@@ -85,10 +149,23 @@ int main(void) {
             // Add a newline at the end of the output
             putchar('\n');
         }
+
+	if(haspipe == 1){
+	    wait(NULL);
+	}
         //***** NOT SURE IF NECESSARY, KEEP FOR NOW *****
         //clear input buffer for next command
         memset(input, 0, sizeof(input));
+
+	
+	if(fint == 0 && haspipe == 1){
+	    exit(0);
+	}
+
+	haspipe = 0;
+	
     }
+
 }
 
 int valid_command(char *string) {
