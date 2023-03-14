@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <signal.h>
+#include <fcntl.h>
 
 //Gusty, the code for my shell is so cool that I want you to read it!
 
@@ -12,8 +13,8 @@
 int valid_command(char *string);
 void sigint_handler();
 int getLength(char **string);
-int checkRedirectOutput(char **args);
-void redirectOutput(char **args, char *command);
+//int checkRedirectOutput(char **args);
+void redirectOutToFile(char* filename, char* text);
 
 //array to store strings
 char *commands[7] = {"ls", "cd", "pwd", "exit", "grep", "cat","help"};
@@ -23,6 +24,7 @@ int main(void) {
     int argc = 0; //counter for number of arguments
     int line = 0; //line number printed for every command prompt
     int numCommands = getLength(commands);
+    int background = 0; //flag for background processes
 
     while (1) {
         signal(SIGINT, sigint_handler); //used to catch and ignore ctrl c
@@ -49,6 +51,20 @@ int main(void) {
             argc++;
         }
         args[i] = NULL; // set the last element to null pointer
+
+        //check to see if args contains a > symbol
+        int redirectOutput = 0;
+        i = 0;
+        while (args[i] != NULL) {
+            if (strcmp(args[i], ">") == 0) {
+                redirectOutput = 1;
+                break;
+            }
+            i++;
+        }
+
+        //get name of file from args
+        char *filename = args[i+1];
 
         //split args check modifier
         int haspipe = 0;
@@ -122,47 +138,54 @@ int main(void) {
             }
         } else if (strcmp(input, "pwd") == 0) {
             char cwd[100];
-            if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                if (checkRedirectOutput(args) == 1) {
-                    //open file
-                    /*FILE *output;
-                    output = fopen(args[i-1], "w");
-                    fprintf(output, "%s", cwd);
-                    fclose(output);*/
-                    redirectOutput(args, cwd);
-                } else {
-                    printf("%s\n", cwd);
-                }
+            char *path = getcwd(cwd, sizeof(cwd));
+            if (redirectOutput == 1) {
+                redirectOutToFile(filename, path);
+            }
+            else if (path != NULL) {
+                printf("%s\n", path);
+            } else {
+                perror("getcwd() error");
             }
         } else if (strncmp(input, "cd", 2) == 0) {
             char *path = input + 3; // skip the "cd " prefix
             if (chdir(path) == 0) {
-                printf("Changed directory to: %s\n", path);
-            } else {
+                if (redirectOutput == 1) {
+                    redirectOutToFile(filename, path);
+                }
+                else {
+                    printf("Changed directory to: %s\n", path);
+                }
+            }
+            else {
                 perror("chdir() error");
             }
-        } else if (strcmp(input, "grep") == 0) {
-            //use the grep command
         }
-            //base case for commands such as ls, cat
+        //base case for commands such as ls, cat
         else {
             if (fork() == 0) {
-                if (checkRedirectOutput(args) == 1) {
-                    //redirect output with execvp
-                    i = 0;
-                    while (args[i] != NULL) {
-                        if (strcmp(args[i], ">") == 0) {
-                            //open file
-                            FILE *output;
-                            output = fopen(args[i + 1], "w");
-                            //print to file
-                            fprintf(output, "%s", (char) execvp(args[0], args));
-                            fclose(output);
-                        }
-                        i++;
-                    }
+                //check for & symbol in args
+                if (strcmp(args[argc - 1], "&") == 0) {
+                    background = 1;
+                    //remove & from args
+                    args[argc - 1] = NULL;
                 }
-                    //if last arg is &, run in background
+                if (redirectOutput == 1) {
+                    //print execvp to file
+                    int fd = open("output.txt", O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+                    if (fd < 0) {
+                        perror("open");
+                        exit(1);
+                    }
+
+                    dup2(fd, STDOUT_FILENO);
+
+                    execvp(args[0], NULL);
+
+                    perror("execvp");
+                    exit(1);
+                }
+                //if last arg is &, run in background
                 else {
                     execvp(args[0], args);
                 }
@@ -172,7 +195,7 @@ int main(void) {
                 }
             } else {
                 //run process in background
-                if (strcmp(args[argc - 1], "&") == 0) {
+                if (strcmp(args[argc - 1], "&") == 0 || background == 1) {
                     continue;
                 } else {
                     wait(NULL);
@@ -185,7 +208,6 @@ int main(void) {
         if (haspipe == 1) {
             wait(NULL);
         }
-        //***** NOT SURE IF NECESSARY, KEEP FOR NOW *****
         //clear input buffer for next command
         memset(input, 0, sizeof(input));
 
@@ -225,7 +247,7 @@ void sigint_handler() {
 }
 
 //check if > command is in args
-int checkRedirectOutput(char **args) {
+/*int checkRedirectOutput(char **args) {
     int i = 0;
     while (args[i] != NULL) {
         if (strcmp(args[i], ">") == 0) {
@@ -234,7 +256,7 @@ int checkRedirectOutput(char **args) {
         i++;
     }
     return 0;
-}
+}*/
 
 //check if < command is in args
 int checkRedirectInput(char **args) {
@@ -249,19 +271,14 @@ int checkRedirectInput(char **args) {
 }
 
 //function that redirects output to a file
-void redirectOutput(char **args, char *command) {
-    int i = 0;
-    while (args[i] != NULL) {
-        if (strcmp(args[i], ">") == 0) {
-            //open file
-            FILE *output;
-            output = fopen(args[i+1], "w");
-            //print to file
-            fprintf(output, "%s", command);
-            fclose(output);
-        }
-        i++;
+void redirectOutToFile(char* filename, char* text) {
+    FILE *f = fopen(filename, "w");
+    if (f == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
     }
+    fprintf(f, "%s", text);
+    fclose(f);
 }
 
 //function that redirects input from a file
