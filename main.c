@@ -5,6 +5,7 @@
 #include <string.h>
 #include <signal.h>
 #include <fcntl.h>
+#include "linuxCommands.h"
 
 //Gusty, the code for my shell is so cool that I want you to read it!
 
@@ -62,9 +63,6 @@ int main(void) {
             }
             i++;
         }
-
-        //get name of file from args
-        char *filename = args[i+1];
 
         //split args check modifier
         int haspipe = 0;
@@ -126,6 +124,8 @@ int main(void) {
             }
         }
 
+        char *outfile = args[i + 1]; //get filename of output file if specified
+
         //if the user enters nothing, continue
         if (strlen(input) == 0) {
             continue;
@@ -140,7 +140,8 @@ int main(void) {
             char cwd[100];
             char *path = getcwd(cwd, sizeof(cwd));
             if (redirectOutput == 1) {
-                redirectOutToFile(filename, path);
+                //get filename
+                redirectOutToFile(outfile, path);
             }
             else if (path != NULL) {
                 printf("%s\n", path);
@@ -151,7 +152,7 @@ int main(void) {
             char *path = input + 3; // skip the "cd " prefix
             if (chdir(path) == 0) {
                 if (redirectOutput == 1) {
-                    redirectOutToFile(filename, path);
+                    redirectOutToFile(outfile, path);
                 }
                 else {
                     printf("Changed directory to: %s\n", path);
@@ -171,25 +172,27 @@ int main(void) {
                     args[argc - 1] = NULL;
                 }
                 if (redirectOutput == 1) {
-                    //print execvp to file
-                    int fd = open("output.txt", O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
-                    if (fd < 0) {
-                        perror("open");
-                        exit(1);
+                    char *result;
+                    if (strcmp(args[0], "ls") == 0) {
+                        char *path = input + 3;
+                        result = my_ls(path);
+                        redirectOutToFile(outfile, result);
+                    } else if (strcmp(args[0], "cat") == 0){
+                        char *filename = args[1]; //file to be printed
+                        my_cat(filename);
                     }
-
-                    dup2(fd, STDOUT_FILENO);
-
-                    execvp(args[0], NULL);
-
-                    perror("execvp");
                     exit(1);
                 }
-                //if last arg is &, run in background
-                else {
-                    execvp(args[0], args);
+                if (strcmp(args[0], "ls") == 0) {
+                    //get current directory
+                    char cwd[100];
+                    char *path = getcwd(cwd, sizeof(cwd));
+                    printf("%s\n", my_ls(path));
                 }
-                //execvp(args[0], args);
+                else if (strcmp(args[0], "cat") == 0){
+                    char *filename = args[1]; //file that is to be printed
+                    my_cat(filename);
+                }
                 if (valid_command(args[0]) == 0) {
                     printf("Unknown command: %s\n", args[0]);
                 }
@@ -246,18 +249,6 @@ void sigint_handler() {
     printf("\n");
 }
 
-//check if > command is in args
-/*int checkRedirectOutput(char **args) {
-    int i = 0;
-    while (args[i] != NULL) {
-        if (strcmp(args[i], ">") == 0) {
-            return 1;
-        }
-        i++;
-    }
-    return 0;
-}*/
-
 //check if < command is in args
 int checkRedirectInput(char **args) {
     int i = 0;
@@ -272,7 +263,7 @@ int checkRedirectInput(char **args) {
 
 //function that redirects output to a file
 void redirectOutToFile(char* filename, char* text) {
-    FILE *f = fopen(filename, "w");
+    FILE *f = fopen(filename, "w+");
     if (f == NULL) {
         printf("Error opening file!\n");
         exit(1);
