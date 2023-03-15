@@ -179,7 +179,8 @@ int main(void) {
                         redirectOutToFile(outfile, result);
                     } else if (strcmp(args[0], "cat") == 0){
                         char *filename = args[1]; //file to be printed
-                        my_cat(filename);
+                        result = my_cat(filename);
+                        redirectOutToFile(outfile, result);
                     }
                     exit(1);
                 }
@@ -191,7 +192,8 @@ int main(void) {
                 }
                 else if (strcmp(args[0], "cat") == 0){
                     char *filename = args[1]; //file that is to be printed
-                    my_cat(filename);
+                    char *output = my_cat(filename);
+                    printf("%s\n", output);
                 }
                 if (valid_command(args[0]) == 0) {
                     printf("Unknown command: %s\n", args[0]);

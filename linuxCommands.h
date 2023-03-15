@@ -10,4 +10,4 @@
 
 char *my_ls(char *dir);
 
-void my_cat(char *filename);
+char *my_cat(char *filename);

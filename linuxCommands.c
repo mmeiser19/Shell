@@ -53,19 +53,32 @@ char *my_ls(char *dir) {
     return output; // return the output string
 }
 
-void my_cat(char *filename) {
-    // create a child process
-    pid_t pid = fork();
-    if (pid == 0) {
-        // child process
-        char *args[] = {"cat", filename, NULL};
-        execvp(args[0], args);
-    } else {
-        // parent process
-        int status;
-        waitpid(pid, &status, 0);
+char *my_cat(char *filename) {
+    FILE *fp;
+    char *output = NULL;
+    char buffer[1024];
+    int size = 0, n;
 
-        // Add a newline after the last line of the file
-        putchar('\n');
+    fp = fopen(filename, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Error: Unable to open file %s\n", filename);
+        return NULL;
     }
+
+    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+        output = realloc(output, size + n + 1);
+        if (output == NULL) {
+            fclose(fp);
+            fprintf(stderr, "Error: Memory allocation failed\n");
+            return NULL;
+        }
+        memcpy(output + size, buffer, n);
+        size += n;
+    }
+
+    fclose(fp);
+    if (size > 0) {
+        output[size] = '\0';
+    }
+    return output;
 }
