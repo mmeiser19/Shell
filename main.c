@@ -205,6 +205,9 @@ int main(void) {
                     printf("Unknown command: %s\n", args[0]);
                     printf("Enter 'help' to see a list of valid commands.\n");
                 }
+                if (background == 0) { // If the process is not running in the background, exit the process
+                    exit(0);
+                }
             }
             else {
                 // Run process in background
@@ -214,11 +217,6 @@ int main(void) {
                 else {
                     wait(NULL);
                 }
-            }
-            //****************
-            // If process is not in the background and is not the only process running, exit the child process
-            if (background == 0 && fint != 0) {
-                exit(0);
             }
         }
 
@@ -230,9 +228,9 @@ int main(void) {
         memset(input, 0, sizeof(input));
 
         // If there is a pipe, exit the child process
-        if (fint == 0 && haspipe == 1) {
+        /*if (fint == 0 && haspipe == 1) {
             exit(0);
-        }
+        }*/
 
         haspipe = 0; // Reset haspipe
         argc = 0; // Reset argc
