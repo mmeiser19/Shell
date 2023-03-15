@@ -210,8 +210,10 @@ int main(void) {
                     wait(NULL);
                 }
             }
-            if (background != 1) {
-                exit(0); // Exit child process
+            //****************
+            // If process is not in the background and is not the only process running, exit the child process
+            if (background == 0 && fint != 0) {
+                exit(0);
             }
         }
 
@@ -256,7 +258,7 @@ int getLength(char **string) {
 
 // Handle SIGINT signal by ignoring it and printing a new line
 void sigint_handler() {
-    //Do nothing; ignore the signal
+    // Do nothing; ignore the signal
     printf("\n");
 }
 

@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include "linuxCommands.h"
 
+// List the contents of a given directory
 char *my_ls(char *path) {
     DIR* directory;
     struct dirent* entry; // Directory entry
@@ -53,6 +54,7 @@ char *my_ls(char *path) {
     return result;
 }
 
+// Print the contents of a given file
 char *my_cat(char *filename) {
     FILE *fp;
     char *output = NULL;
