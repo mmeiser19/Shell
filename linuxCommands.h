@@ -8,6 +8,6 @@
 
 #endif //SHELL_LINUXCOMMANDS_H
 
-char *my_ls(char *dir);
+char *my_ls(char *path);
 
 char *my_cat(char *filename);

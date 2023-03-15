@@ -4,7 +4,6 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <signal.h>
-#include <fcntl.h>
 #include "linuxCommands.h"
 
 //Gusty, the code for my shell is so cool that I want you to read it!
@@ -14,7 +13,6 @@
 int valid_command(char *string);
 void sigint_handler();
 int getLength(char **string);
-//int checkRedirectOutput(char **args);
 void redirectOutToFile(char* filename, char* text);
 
 //array to store strings
@@ -66,7 +64,7 @@ int main(void) {
 
         //split args check modifier
         int haspipe = 0;
-        for (int i = 0; i < argc; i++) {
+        for (i = 0; i < argc; i++) {
             if (strcmp(args[i], "|") == 0) {
                 haspipe = 1;
             }
@@ -80,7 +78,7 @@ int main(void) {
 
             //printf("%d", argc);
             //read and fork if pipe symbol
-            for (int i = 0; i < argc; i++) {
+            for (i = 0; i < argc; i++) {
                 //check if arg is pipe
                 if (strcmp(args[i], "|") == 0) {
                     //create new process
@@ -98,10 +96,10 @@ int main(void) {
 
             //initialize forked pipe process
             if (fint == 0) {
-                for (int i = 0; i < (MAX_LINE / 2); i++) {
+                for (i = 0; i < (MAX_LINE / 2); i++) {
                     args[i] = NULL;
                 }
-                for (int i = 0; i < repargc; i++) {
+                for (i = 0; i < repargc; i++) {
                     args[i] = repargs[i];
                 }
                 argc = repargc;
@@ -109,7 +107,7 @@ int main(void) {
                 //erase arguments after pipe in parent process from args array
             else {
                 int erase = 0; //false by default
-                for (int i = 0; i < argc; i++) {
+                for (i = 0; i < argc; i++) {
                     if (erase == 1) {
                         args[i] = NULL;
                     } else if (strcmp(args[i], "|") == 0) {
@@ -124,7 +122,7 @@ int main(void) {
             }
         }
 
-        char *outfile = args[i + 1]; //get filename of output file if specified
+        char *outfile = args[i - 1]; //get filename of output file if specified
 
         //if the user enters nothing, continue
         if (strlen(input) == 0) {
@@ -174,8 +172,10 @@ int main(void) {
                 if (redirectOutput == 1) {
                     char *result;
                     if (strcmp(args[0], "ls") == 0) {
-                        char *path = input + 3;
+                        char cwd[100];
+                        char *path = getcwd(cwd, sizeof(cwd));
                         result = my_ls(path);
+                        //printf("%s\n", result);
                         redirectOutToFile(outfile, result);
                     } else if (strcmp(args[0], "cat") == 0){
                         char *filename = args[1]; //file to be printed
@@ -185,7 +185,6 @@ int main(void) {
                     exit(1);
                 }
                 if (strcmp(args[0], "ls") == 0) {
-                    //get current directory
                     char cwd[100];
                     char *path = getcwd(cwd, sizeof(cwd));
                     printf("%s\n", my_ls(path));
@@ -265,7 +264,7 @@ int checkRedirectInput(char **args) {
 
 //function that redirects output to a file
 void redirectOutToFile(char* filename, char* text) {
-    FILE *f = fopen(filename, "w+");
+    FILE *f = fopen(filename, "w");
     if (f == NULL) {
         printf("Error opening file!\n");
         exit(1);
