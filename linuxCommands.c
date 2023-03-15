@@ -1,60 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <string.h>
 #include <dirent.h>
 #include "linuxCommands.h"
 
-#define READ_END 0
-#define WRITE_END 1
-
 char *my_ls(char *path) {
-    /*int pipefd[2];
-    pid_t pid;
-    char buffer[1024];
-    char* output = malloc(1); // initialize output string with null terminator
-
-    // create the pipe
-    if (pipe(pipefd) == -1) {
-        perror("pipe");
-        exit(EXIT_FAILURE);
-    }
-
-    // fork a child process
-    pid = fork();
-    if (pid == -1) {
-        perror("fork");
-        exit(EXIT_FAILURE);
-    }
-
-    if (pid == 0) {
-        // child process: redirect stdout to the write end of the pipe
-        close(pipefd[READ_END]);
-        dup2(pipefd[WRITE_END], STDOUT_FILENO);
-        close(pipefd[WRITE_END]);
-
-        execvp("ls", NULL);
-        perror("execvp");
-        exit(EXIT_FAILURE);
-    } else {
-        // parent process: read from the read end of the pipe and store output in a string
-        close(pipefd[WRITE_END]);
-        while (read(pipefd[READ_END], buffer, sizeof(buffer)) != 0) {
-            printf("buffer size:%lu\n", sizeof(buffer));
-            output = realloc(output, strlen(output) + strlen(buffer) + 1);
-            strcat(output, buffer);
-        }
-        close(pipefd[READ_END]);
-    }
-
-    return output; // return the output string*/
-
     DIR* directory;
-    struct dirent* entry;
+    struct dirent* entry; // Directory entry
     char* result = NULL;
-    int result_size = 0;
-    int current_size = 0;
+    int result_size = 0; // The size of the result array
+    int current_size = 0; // The current size of the result array
 
     // Open the directory
     directory = opendir(path);
@@ -74,7 +29,7 @@ char *my_ls(char *path) {
         int name_len = strlen(entry->d_name);
         if (current_size + name_len + 2 > result_size) {
             result_size += 1024;
-            result = realloc(result, result_size);
+            result = realloc(result, result_size); // Resize the result array
             if (result == NULL) {
                 perror("Unable to allocate memory");
                 closedir(directory);
@@ -111,19 +66,19 @@ char *my_cat(char *filename) {
     }
 
     while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-        output = realloc(output, size + n + 1);
+        output = realloc(output, size + n + 1); // Resize the output buffer
         if (output == NULL) {
             fclose(fp);
             fprintf(stderr, "Error: Memory allocation failed\n");
             return NULL;
         }
-        memcpy(output + size, buffer, n);
+        memcpy(output + size, buffer, n); // Copy the buffer to the output
         size += n;
     }
 
     fclose(fp);
     if (size > 0) {
-        output[size] = '\0';
+        output[size] = '\0'; // Add a terminating null character
     }
     return output;
 }
