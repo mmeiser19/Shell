@@ -24,6 +24,7 @@ int main(void) {
     int line = 0; //line number printed for every command prompt
     int numCommands = getLength(commands);
     int background = 0; //flag for background processes
+    int haspipe = 0; //flag for pipe processes
 
     while (1) {
         signal(SIGINT, sigint_handler); //used to catch and ignore ctrl c
@@ -35,7 +36,7 @@ int main(void) {
 
         //checks to see if the user entered a command
         //if the command is ctrl d, exit the program
-        if (fgets(input, MAX_LINE, stdin) == NULL && feof(stdin)) {
+        if (fgets(input, MAX_LINE, stdin) == NULL  && feof(stdin)) {
             printf("\n");
             exit(0);
         }
@@ -63,7 +64,6 @@ int main(void) {
         }
 
         //split args check modifier
-        int haspipe = 0;
         for (i = 0; i < argc; i++) {
             if (strcmp(args[i], "|") == 0) {
                 haspipe = 1;
@@ -162,7 +162,8 @@ int main(void) {
         }
         //base case for commands such as ls, cat
         else {
-            if (fork() == 0) {
+            pid_t pid = fork();
+            if (pid == 0) {
                 //check for & symbol in args
                 if (strcmp(args[argc - 1], "&") == 0) {
                     background = 1;
@@ -201,14 +202,17 @@ int main(void) {
                 //run process in background
                 if (strcmp(args[argc - 1], "&") == 0 || background == 1) {
                     continue;
-                } else {
+                }
+                else {
                     wait(NULL);
                 }
-                // Add a newline at the end of the output
-                putchar('\n');
+            }
+            if (background != 1) {
+                exit(0); //exit child process
             }
         }
 
+        //wait for child process to finish
         if (haspipe == 1) {
             wait(NULL);
         }
@@ -220,7 +224,7 @@ int main(void) {
             exit(0);
         }
 
-        haspipe = 0;
+        haspipe = 0; //reset haspipe
         argc = 0; //reset argc
 
     }
@@ -250,18 +254,6 @@ void sigint_handler() {
     printf("\n");
 }
 
-//check if < command is in args
-int checkRedirectInput(char **args) {
-    int i = 0;
-    while (args[i] != NULL) {
-        if (strcmp(args[i], "<") == 0) {
-            return 1;
-        }
-        i++;
-    }
-    return 0;
-}
-
 //function that redirects output to a file
 void redirectOutToFile(char* filename, char* text) {
     FILE *f = fopen(filename, "w");
@@ -272,5 +264,3 @@ void redirectOutToFile(char* filename, char* text) {
     fprintf(f, "%s", text);
     fclose(f);
 }
-
-//function that redirects input from a file
