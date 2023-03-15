@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -std=c99
+CFLAGS = -Wall
 LDFLAGS =
 
 SRCS = main.c linuxCommands.c
