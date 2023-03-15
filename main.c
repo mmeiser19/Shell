@@ -113,11 +113,13 @@ int main(void) {
                     if (erase == 1) {
                         args[i] = NULL;
                         break;
-                    } else if (strcmp(args[i], "|") == 0) {
+                    }
+                    else if (strcmp(args[i], "|") == 0) {
                         args[i] = NULL;
                         argc = i;// - 1;
                         erase = 1;
-                    } else {
+                    }
+                    else {
                         continue;
                     }
                 }
@@ -137,7 +139,8 @@ int main(void) {
             for (int j = 0; j < numCommands; j++) {
                 printf("%s\n", commands[j]);
             }
-        } else if (strcmp(input, "pwd") == 0) { // Print the current working directory
+        }
+        else if (strcmp(input, "pwd") == 0) { // Print the current working directory
             char cwd[100];
             char *path = getcwd(cwd, sizeof(cwd));
             if (redirectOutput == 1) {
@@ -145,7 +148,8 @@ int main(void) {
             }
             else if (path != NULL) {
                 printf("%s\n", path);
-            } else {
+            }
+            else {
                 perror("getcwd() error");
             }
         } else if (strncmp(input, "cd", 2) == 0) { // Change the current working directory
@@ -201,7 +205,8 @@ int main(void) {
                     printf("Unknown command: %s\n", args[0]);
                     printf("Enter 'help' to see a list of valid commands.\n");
                 }
-            } else {
+            }
+            else {
                 // Run process in background
                 if (strcmp(args[argc - 1], "&") == 0 || background == 1) {
                     continue;
